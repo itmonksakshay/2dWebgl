@@ -10,14 +10,13 @@ import { loadShader } from './lib/webglUtils/shaderUtils'
 import { createProgram } from './lib/webglUtils/progamUtils'
 import { createLetterF } from './lib/models/rectangleModel'
 import { RightOperationSidebar } from './components/organisms/Sidebars/RightOperationSideBar'
+import { mat3 } from './lib/webglUtils/mat3'
 
 type TGlLocationsTypes = {
   positionAttributeLocation: GLint,
   resolutionUniformLocation: WebGLUniformLocation,
   colorLocation: WebGLUniformLocation,
-  translationLocation: WebGLUniformLocation
-  rotationLocation: WebGLUniformLocation
-  scaleLocation: WebGLUniformLocation
+  matrixLocation: WebGLUniformLocation
 }
 
 type TProgramInfoTypes = {
@@ -40,7 +39,7 @@ function App() {
   const vertices = useMemo(() => {
     // Generate rectangle at fixed origin; translation uniform will move it on screen
     return createLetterF()
-  }, [rectWidth, rectHeight])
+  }, [])
   const vertexCount = useMemo(() => vertices.length / 3, [vertices])
 
   const drawCanvas = useCallback((translations: [number, number], rotation: [number, number], scale: [number, number]) => {
@@ -49,7 +48,7 @@ function App() {
     if (!programInfo || !glLocations) return
 
     const { glCtx, program, vao } = programInfo
-    const { resolutionUniformLocation, colorLocation, translationLocation, rotationLocation, scaleLocation } = glLocations
+    const { resolutionUniformLocation, colorLocation, matrixLocation } = glLocations
 
     glCtx.useProgram(program)
     glCtx.bindVertexArray(vao)
@@ -60,16 +59,16 @@ function App() {
 
     // Random color each draw
     const color = [Math.random(), Math.random(), Math.random(), 1]
-    glCtx.uniform4fv(colorLocation, color)
+    glCtx.uniform4fv(colorLocation, color);
 
+    const translate = mat3.translation(translations);
+    const rotate = mat3.radianRotation(rotation);
+    const scaling = mat3.scaling(scale);
+
+    let matrix = mat3.multiply(translate, rotate);
+    matrix = mat3.multiply(matrix, scaling)
     // Set Rotation
-    glCtx.uniform2fv(rotationLocation, rotation)
-
-    // Set translation
-    glCtx.uniform2fv(translationLocation, translations)
-
-    // Set Scale
-    glCtx.uniform2fv(scaleLocation, scale)
+    glCtx.uniformMatrix3fv(matrixLocation, false, matrix);
 
     // Clear and draw
     glCtx.viewport(0, 0, dimensions.width, dimensions.height)
@@ -97,9 +96,8 @@ function App() {
     const positionAttributeLocation = glCtx.getAttribLocation(program, "a_position")
     const resolutionUniformLocation = glCtx.getUniformLocation(program, "u_resolution")
     const colorLocation = glCtx.getUniformLocation(program, "u_color")
-    const translationLocation = glCtx.getUniformLocation(program, "u_translation")
-    const rotationLocation = glCtx.getUniformLocation(program, "u_rotation")
-    const scaleLocation = glCtx.getUniformLocation(program, "u_scale")
+    const matrixLocation = glCtx.getUniformLocation(program, "u_matrix")
+
     const vao = glCtx.createVertexArray()
     const buffer = glCtx.createBuffer()
     glCtx.bindVertexArray(vao)
@@ -109,9 +107,9 @@ function App() {
     glCtx.enableVertexAttribArray(positionAttributeLocation)
     glCtx.vertexAttribPointer(positionAttributeLocation, 3, glCtx.FLOAT, false, 0, 0)
     glCtx.bindVertexArray(null)
-    if (resolutionUniformLocation && colorLocation && translationLocation && rotationLocation && scaleLocation) {
+    if (resolutionUniformLocation && colorLocation && matrixLocation) {
       programInfoRef.current = { glCtx, buffer: buffer!, vao: vao!, program }
-      glLocationsRef.current = { positionAttributeLocation, resolutionUniformLocation, translationLocation, colorLocation, rotationLocation, scaleLocation }
+      glLocationsRef.current = { positionAttributeLocation, resolutionUniformLocation, matrixLocation, colorLocation }
     }
 
     return () => {

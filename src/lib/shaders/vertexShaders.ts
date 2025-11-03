@@ -1,21 +1,14 @@
 export const vertexShaderSource = `#version 300 es
+
+
 in vec3 a_position;
-
+ 
 uniform vec2 u_resolution;
-uniform vec2 u_translation;
-uniform vec2 u_rotation;
-uniform vec2 u_scale;
-
+uniform mat3 u_matrix;
+ 
 void main() {
-
-    // scaling
-    vec2 scaledPosition = a_position.xy * u_scale;
-    // Add a rotation to x and y
-      vec2 rotatedPosition = vec2(
-     scaledPosition.x * u_rotation.y + scaledPosition.y * u_rotation.x,
-     scaledPosition.y * u_rotation.y - scaledPosition.x * u_rotation.x);
-    // Add translation to x and y
-    vec2 position = rotatedPosition + u_translation;
+  // Multiply the position by the matrix.
+    vec2 position = (u_matrix * vec3(a_position.xy, 1)).xy;
 
     vec2 zeroToOne = position / u_resolution;
 
