@@ -20,8 +20,7 @@ type TProps = {
 const OperationSideBarComponent: React.FC<TProps> = ({ translations, setTranslations, rectWidth, rectHeight, setRectWidth, setRectHeight, maxX, maxY, setRotation }) => {
 
     const onRotate = (normalized: { x: number; y: number; }) => {
-        setRotation([-normalized.x, normalized.y])
-        console.log(normalized, "normalized")
+        setRotation([normalized.x, normalized.y])
     }
     return <div className="w-full space-y-6">
         <div className="grid grid-cols-2 gap-3">
