@@ -14,7 +14,6 @@ import { mat3 } from './lib/webglUtils/mat3'
 
 type TGlLocationsTypes = {
   positionAttributeLocation: GLint,
-  resolutionUniformLocation: WebGLUniformLocation,
   colorLocation: WebGLUniformLocation,
   matrixLocation: WebGLUniformLocation
 }
@@ -48,24 +47,23 @@ function App() {
     if (!programInfo || !glLocations) return
 
     const { glCtx, program, vao } = programInfo
-    const { resolutionUniformLocation, colorLocation, matrixLocation } = glLocations
+    const { colorLocation, matrixLocation } = glLocations
 
     glCtx.useProgram(program)
     glCtx.bindVertexArray(vao)
     // VAO already remembers bound buffer and attribute pointers
 
-    // Pass canvas resolution
-    glCtx.uniform2f(resolutionUniformLocation, dimensions.width, dimensions.height)
-
     // Random color each draw
     const color = [Math.random(), Math.random(), Math.random(), 1]
     glCtx.uniform4fv(colorLocation, color);
 
+    const projection = mat3.projection(dimensions.width, dimensions.height)
     const translate = mat3.translation(translations);
     const rotate = mat3.radianRotation(rotation);
     const scaling = mat3.scaling(scale);
 
-    let matrix = mat3.multiply(translate, rotate);
+    let matrix = mat3.multiply(projection, translate)
+    matrix = mat3.multiply(matrix, rotate);
     matrix = mat3.multiply(matrix, scaling)
     // Set Rotation
     glCtx.uniformMatrix3fv(matrixLocation, false, matrix);
@@ -94,7 +92,6 @@ function App() {
     const fragmentShader = loadShader(glCtx, glCtx.FRAGMENT_SHADER, fragmentShaderSource)
     const program = createProgram(glCtx, vertexShader, fragmentShader)
     const positionAttributeLocation = glCtx.getAttribLocation(program, "a_position")
-    const resolutionUniformLocation = glCtx.getUniformLocation(program, "u_resolution")
     const colorLocation = glCtx.getUniformLocation(program, "u_color")
     const matrixLocation = glCtx.getUniformLocation(program, "u_matrix")
 
@@ -107,9 +104,9 @@ function App() {
     glCtx.enableVertexAttribArray(positionAttributeLocation)
     glCtx.vertexAttribPointer(positionAttributeLocation, 3, glCtx.FLOAT, false, 0, 0)
     glCtx.bindVertexArray(null)
-    if (resolutionUniformLocation && colorLocation && matrixLocation) {
+    if (colorLocation && matrixLocation) {
       programInfoRef.current = { glCtx, buffer: buffer!, vao: vao!, program }
-      glLocationsRef.current = { positionAttributeLocation, resolutionUniformLocation, matrixLocation, colorLocation }
+      glLocationsRef.current = { positionAttributeLocation, matrixLocation, colorLocation }
     }
 
     return () => {

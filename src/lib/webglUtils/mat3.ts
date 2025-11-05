@@ -53,4 +53,7 @@ export const mat3 = {
       y: x * m[1] + y * m[4] + m[7],
     };
   },
+  projection(width: number, height: number): Mat3 {
+    return [2 / width, 0, 0, 0, -2 / height, 0, -1, 1, 1];
+  },
 } as const;
